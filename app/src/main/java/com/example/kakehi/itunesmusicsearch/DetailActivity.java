@@ -3,12 +3,14 @@ package com.example.kakehi.itunesmusicsearch;
 import android.app.Activity;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.view.View;
 import android.widget.MediaController;
 import android.widget.VideoView;
 
 
-public class DetailActivity extends Activity {
+public class DetailActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -17,7 +19,7 @@ public class DetailActivity extends Activity {
 
         // ActionBarのタイトルを設定する
         String trackName = getIntent().getExtras().getString("track_name");
-        getActionBar().setTitle(trackName);
+        getSupportActionBar().setTitle(trackName);
 
         String previewUrl = getIntent().getExtras().getString("preview_url");
         if (!TextUtils.isEmpty(previewUrl)) {

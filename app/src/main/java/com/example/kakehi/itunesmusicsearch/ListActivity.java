@@ -66,6 +66,7 @@ public class ListActivity extends Activity {
         public View getView(int position, View convertView, ViewGroup parent) {
             if (convertView == null) {
                 // 再利用可能なViewがない場合は作る
+                //親のViewGroupを指定せずにlist_itemViewを作っているだけ。
                 convertView = getLayoutInflater().inflate(R.layout.list_item, null);
             }
 
@@ -77,6 +78,7 @@ public class ListActivity extends Activity {
             if (imageContainer != null) {
                 imageContainer.cancelRequest(); // 画像取得中のリクエストをキャンセルする（再利用された時）
             }
+
             imageView.setImageBitmap(null); // 残ってる画像を消す（再利用された時）
 
             // 表示する行番号のデータを取り出す
@@ -94,18 +96,6 @@ public class ListActivity extends Activity {
 
     private class OnKeyListener implements View.OnKeyListener {
 
-        private Response.ErrorListener errorListener = new Response.ErrorListener() {
-
-            @Override
-            public void onErrorResponse(VolleyError error) {
-
-                Log.d("error", "http request errored");
-                Log.d("Error Message", error.getMessage());
-
-            }
-
-        };
-
         @Override
         public boolean onKey(View view, int keyCode, KeyEvent keyEvent) {
             if (keyEvent.getAction() == KeyEvent.ACTION_UP && keyCode == KeyEvent.KEYCODE_ENTER) {
@@ -115,6 +105,7 @@ public class ListActivity extends Activity {
                 InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(editText.getWindowToken(), 0);
 
+                // urlエンコード
                 String text = editText.getText().toString();
                 try {
                     // url encode　例. スピッツ > %83X%83s%83b%83c
@@ -123,32 +114,43 @@ public class ListActivity extends Activity {
                     Log.e("", e.toString(), e);
                     return true;
                 }
+
                 if (!TextUtils.isEmpty(text)) {
-                    String url =
-                            "https://itunes.apple.com/search?term=" + text + "&country=JP&media=music&lang=ja_jp";
-                    mRequestQueue.add(new JsonObjectRequest(Request.Method.GET, url,
-                            new Response.Listener<JSONObject>() {
-                                @Override
-                                public void onResponse(JSONObject response) {
-                                    Log.d("", response.toString());
-
-                                    mAdapter.clear();
-
-                                    JSONArray results = response.optJSONArray("results");
-                                    if (results != null) {
-                                        for (int i = 0; i < results.length(); i++) {
-                                            mAdapter.add(results.optJSONObject(i));
-                                        }
-                                    }
-                                }
-                            },
-                            errorListener));
+                    String url = "https://itunes.apple.com/search?term=" + text + "&country=JP&media=music&lang=ja_jp";
+                    mRequestQueue.add(new JsonObjectRequest(Request.Method.GET, url, listener, errorListener));
                 }
                 return true;
             }
             return false;
         }
 
+        private Response.Listener listener = new Response.Listener<JSONObject>() {
+
+            @Override
+            public void onResponse(JSONObject response) {
+                Log.d("", response.toString());
+                // 前の検索結果があれば上書きしたいので消去する。
+                mAdapter.clear();
+
+                JSONArray results = response.optJSONArray("results");
+                if (results != null) {
+                    for (int i = 0; i < results.length(); i++) {
+                        mAdapter.add(results.optJSONObject(i));
+                    }
+                }
+
+            }
+        };
+
+        private Response.ErrorListener errorListener = new Response.ErrorListener() {
+
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.d("error", "http request errored");
+                Log.d("Error Message", error.getMessage());
+            }
+
+        };
     }
 
     private class OnItemClickListener implements AdapterView.OnItemClickListener {
